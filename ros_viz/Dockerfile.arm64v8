@@ -1,0 +1,10 @@
+FROM lblanp/ros_base_noetic_arm64v8
+
+# Install dependencies
+RUN apt-get update \
+    && apt-get install -q -y --no-install-recommends \
+        ros-$ROS_DISTRO-rviz \
+        ros-$ROS_DISTRO-rqt \
+        ros-$ROS_DISTRO-rqt-common-plugins \
+        ros-$ROS_DISTRO-camera-calibration \
+    && rm -rf /var/lib/apt/lists/*

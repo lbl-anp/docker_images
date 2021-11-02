@@ -1,0 +1,8 @@
+FROM lblanp/ros_base_noetic_arm64v8
+
+# Install dependencies
+RUN apt-get update \
+    && apt-get install -q -y --no-install-recommends \
+        ros-$ROS_DISTRO-cv-camera \
+        ros-$ROS_DISTRO-image-proc \
+    && rm -rf /var/lib/apt/lists/*
