@@ -2,7 +2,6 @@
 # Author: Joey Curtis @jccurtis
 import argparse
 import platform
-import shutil
 import logging
 import json
 from pathlib import Path
@@ -17,6 +16,16 @@ DOCKER_API = docker.APIClient()  # low level
 REPO_DIR = Path(__file__).parent
 REPO_DOCKERIGNORE = REPO_DIR / ".dockerignore"
 IMAGES_DIR = REPO_DIR / "images"
+
+
+def parse_stream(out):
+    data = json.loads(out)
+    if "stream" in data:
+        return data["stream"]
+    elif "error" in data:
+        return data["error"]
+    else:
+        return str(data)
 
 
 def do_build(
@@ -53,27 +62,17 @@ def do_build(
     full_name = f"{DOCKER_NAMESPACE}/{dockerfile.parent.stem}"
     if len(extra_tags):
         full_name += "_" + "_".join(extra_tags)
-    # Determine build context
-    dockerignore_path = dockerfile.parent / ".dockerignore"
-    if REPO_DOCKERIGNORE.is_file():
-        REPO_DOCKERIGNORE.unlink()
-    if dockerignore_path.is_file():
-        logging.info(f"Found and copying docker ignore: {dockerignore_path}")
-        shutil.copy(str(dockerignore_path), str(REPO_DOCKERIGNORE))
-        build_path = REPO_DIR
-    else:
-        build_path = dockerfile.parent
     # Build the image
     options = {
-        "path": str(build_path),
-        "dockerfile": str(dockerfile).lstrip(str(build_path)),
+        "path": str(REPO_DIR),
+        "dockerfile": str(dockerfile).lstrip(str(REPO_DIR)),
         "tag": f"{full_name}:latest",
         "nocache": rebuild,
         "quiet": False,
     }
     logging.info(f"Building: {options}")
     for out in DOCKER_API.build(**options):
-        print(json.loads(out).get("stream", "").rstrip("\n"))
+        print(parse_stream(out).rstrip("\n"))
     if REPO_DOCKERIGNORE.is_file():
         REPO_DOCKERIGNORE.unlink()
     return full_name
