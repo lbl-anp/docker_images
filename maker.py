@@ -35,19 +35,26 @@ def build(dockerfile: Path, rebuild: bool = False) -> str:
             f"vs requested={image_arch}) Skipping: {dockerfile}"
         )
         return
-    image_name = f"{DOCKER_NAMESPACE}/{dockerfile.parent.stem}"
+    full_name = f"{DOCKER_NAMESPACE}/{dockerfile.parent.stem}"
     if len(extra_tags):
-        image_name += "_" + "_".join(extra_tags)
+        full_name += "_" + "_".join(extra_tags)
     # Prepare cmd
     cmd = (
         f"cd {dockerfile.parent} && "
-        f"docker build -t {image_name}:latest -f {dockerfile.name} "
+        f"docker build -t {full_name}:latest -f {dockerfile.name} "
         f"{'--no-cache ' if rebuild else ''}"
         "."
     )
     logging.info(f"Building: {cmd}")
     subprocess.Popen(shlex.split(cmd), shell=True).wait()
-    return image_name
+    return full_name
+
+
+def push(full_name: str, tags: list) -> None:
+    for tag in tags:
+        cmd = f"docker push {full_name}:{tag}"
+        logging.info(f"Pushing: {cmd}")
+        subprocess.Popen(shlex.split(cmd), shell=True).wait()
 
 
 def main(name: str, push: bool = False, rebuild: bool = False) -> None:
@@ -59,7 +66,9 @@ def main(name: str, push: bool = False, rebuild: bool = False) -> None:
         return
     # Build images
     for dfile in dfiles:
-        build(dfile, rebuild=rebuild)
+        full_name = build(dfile, rebuild=rebuild)
+        if push:
+            push(full_name, tags=["latest"])
 
 
 def cli():
@@ -76,16 +85,16 @@ def cli():
         choices=neighbors,
     )
     parser.add_argument(
-        "-p",
-        "--push",
-        action="store_true",
-        help="Run docker push",
-    )
-    parser.add_argument(
         "-r",
         "--rebuild",
         action="store_true",
         help="Rebuild with --no-cache option",
+    )
+    parser.add_argument(
+        "-p",
+        "--push",
+        action="store_true",
+        help="Run docker push on the latest tag",
     )
     args = parser.parse_args()
     main(**vars(args))
