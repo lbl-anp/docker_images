@@ -28,4 +28,4 @@ INPUT="path/to/point/cloud.ply" ./run_it.zsh
 
 ## CORS
 
-Turn off cross origin restrictions so local files can be loaded in the web browser in [firefox and chome](http://testingfreak.com/how-to-fix-cross-origin-request-security-cors-error-in-firefox-chrome-and-ie/).
+Turn off cross origin restrictions so local files can be loaded in the web browser in [firefox and chrome](http://testingfreak.com/how-to-fix-cross-origin-request-security-cors-error-in-firefox-chrome-and-ie/).
