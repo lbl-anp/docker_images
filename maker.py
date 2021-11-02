@@ -73,7 +73,7 @@ def do_build(
     }
     logging.info(f"Building: {options}")
     for out in DOCKER_API.build(**options):
-        logging.info("BUILD: {}".format(json.loads(out).get("stream", "").rstrip("\n")))
+        print(json.loads(out).get("stream", "").rstrip("\n"))
     if REPO_DOCKERIGNORE.is_file():
         REPO_DOCKERIGNORE.unlink()
     return full_name
