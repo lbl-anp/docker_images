@@ -2,20 +2,18 @@
 # Author: Joey Curtis @jccurtis
 import argparse
 import platform
-import logging
 import json
+import multiprocessing
 from pathlib import Path
 import docker
 
-logging.basicConfig(
-    level=logging.INFO, format="[%(asctime)s|%(levelname)-4s] %(message)s"
-)
 DOCKER_NAMESPACE = "lblanp"
 DOCKER_CLIENT = docker.from_env()  # high level
 DOCKER_API = docker.APIClient()  # low level
 REPO_DIR = Path(__file__).parent
 REPO_DOCKERIGNORE = REPO_DIR / ".dockerignore"
 IMAGES_DIR = REPO_DIR / "images"
+MAX_JOBS = int(multiprocessing.cpu_count() // 2)
 
 
 def parse_stream(out):
@@ -28,8 +26,17 @@ def parse_stream(out):
         return str(data)
 
 
+def do_print(*args, name: str = None, quiet: bool = False) -> None:
+    if not quiet:
+        print(f"[maker.py{'' if name is None else f'|{name}'}]", *args)
+
+
 def do_build(
-    dockerfile: Path, allow_cross_platform: bool = False, rebuild: bool = False
+    dockerfile: Path,
+    allow_cross_platform: bool = False,
+    rebuild: bool = False,
+    name: str = None,
+    quiet: bool = False,
 ) -> str:
     # Handle tags / arch
     extra_tags = [s.lstrip(".") for s in dockerfile.suffixes]
@@ -40,23 +47,27 @@ def do_build(
             )
     image_arch = "x86_64"
     if "l4t" in extra_tags:
-        logging.info(f"Found Linux 4 Tegra tag in {dockerfile}")
+        do_print(f"Found Linux 4 Tegra tag in {dockerfile}", name=name, quiet=quiet)
         image_arch = "aarch64"
     if "arm64v8" in extra_tags:
-        logging.info(f"Found ARM64v8 tag in {dockerfile}")
+        do_print(f"Found ARM64v8 tag in {dockerfile}", name=name, quiet=quiet)
         image_arch = "aarch64"
     if image_arch != platform.machine():
         if allow_cross_platform:
-            logging.warning(
-                "Attempting to build a cross platform image "
-                f"(this={platform.machine()} vs requested={image_arch}): "
-                f"{dockerfile}"
+            do_print(
+                "Attempting to build a cross platform image",
+                f"(this={platform.machine()} vs requested={image_arch}):",
+                f"{dockerfile}",
+                name=name,
+                quiet=quiet,
             )
         else:
-            logging.warning(
-                "Cannot build across platforms without `-x` option "
-                f"(this={platform.machine()} vs requested={image_arch}): "
-                f"Skipping: {dockerfile}"
+            do_print(
+                "Cannot build across platforms without `-x` option",
+                f"(this={platform.machine()} vs requested={image_arch}):",
+                f"Skipping: {dockerfile}",
+                name=name,
+                quiet=quiet,
             )
             return
     full_name = f"{DOCKER_NAMESPACE}/{dockerfile.parent.stem}"
@@ -70,42 +81,47 @@ def do_build(
         "nocache": rebuild,
         "quiet": False,
     }
-    logging.info(f"Building: {options}")
+    do_print(f"Building: {options}", name=name, quiet=quiet)
     for out in DOCKER_API.build(**options):
-        print(parse_stream(out).rstrip("\n"))
+        do_print(parse_stream(out).rstrip("\n"), name=name, quiet=quiet)
     if REPO_DOCKERIGNORE.is_file():
         REPO_DOCKERIGNORE.unlink()
     return full_name
 
 
-def do_push(full_name: str, tags: list) -> None:
+def do_push(full_name: str, tags: list, name: str = None, quiet: bool = False) -> None:
     for tag in tags:
-        logging.info(f"Pushing: {full_name}:{tag}")
+        do_print(f"Pushing: {full_name}:{tag}", name=name, quiet=quiet)
         DOCKER_CLIENT.images.push(full_name, tag=tag)
 
 
-def main(
+def do_image_workflow(
     name: str,
     allow_cross_platform: bool = False,
     push: bool = False,
     rebuild: bool = False,
+    quiet: bool = False,
 ) -> None:
     directory = Path(IMAGES_DIR / name)
     # Get dockerfiles
     dfiles = list(directory.glob("Dockerfile*"))
     if len(dfiles) == 0:
-        logging.error(f"No `Dockerfile*`s found: {directory}")
+        do_print(f"No `Dockerfile*`s found: {directory}", name=name, quiet=quiet)
         return
     # Build images
     for dfile in dfiles:
         full_name = do_build(
-            dfile, allow_cross_platform=allow_cross_platform, rebuild=rebuild
+            dfile,
+            allow_cross_platform=allow_cross_platform,
+            rebuild=rebuild,
+            name=name,
+            quiet=quiet,
         )
         if push:
-            do_push(full_name, tags=["latest"])
+            do_push(full_name, tags=["latest"], name=name, quiet=quiet)
 
 
-def cli():
+def parse_cmd_line_args():
     # Get neighboring directories
     neighbors = list(p.name for p in IMAGES_DIR.iterdir() if p.is_dir())
     # Command line handling
@@ -113,9 +129,10 @@ def cli():
         description="Utility for building/tagging/pushing docker images."
     )
     parser.add_argument(
-        "name",
+        "names",
         type=str,
-        help="Docker image name (available options listed above).",
+        nargs="+",
+        help="Docker image name(s). The available options are listed above.",
         choices=neighbors,
     )
     parser.add_argument(
@@ -136,9 +153,42 @@ def cli():
         action="store_true",
         help="Run docker push on the latest tag",
     )
-    args = parser.parse_args()
-    main(**vars(args))
+    parser.add_argument(
+        "-m",
+        "--multiprocess",
+        action="store_true",
+        help="Run each image workflow in a separate process (output silenced).",
+    )
+    return parser.parse_args()
 
 
 if __name__ == "__main__":
-    cli()
+    args = parse_cmd_line_args()
+    if len(args.names) == 1 or not args.multiprocess:
+        for name in args.names:
+            do_image_workflow(
+                name,
+                allow_cross_platform=args.allow_cross_platform,
+                rebuild=args.rebuild,
+                push=args.push,
+                quiet=False,
+            )
+    else:
+        results = []
+        with multiprocessing.Pool(min(MAX_JOBS, len(args.names))) as pool:
+            for name in args.names:
+                print(f"Adding build job: {name}")
+                results.append(
+                    pool.apply_async(
+                        do_image_workflow,
+                        args=(name,),
+                        kwds=dict(
+                            allow_cross_platform=args.allow_cross_platform,
+                            rebuild=args.rebuild,
+                            push=args.push,
+                            quiet=False,
+                        ),
+                    )
+                )
+            [r.wait() for r in results]
+    print("Done!")
