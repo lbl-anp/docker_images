@@ -160,7 +160,7 @@ def parse_cmd_line_args():
         "-m",
         "--multiprocess",
         action="store_true",
-        help="Run each image workflow in a separate process (output silenced).",
+        help="Run each image workflow in a separate process.",
     )
     return parser.parse_args()
 
