@@ -33,12 +33,40 @@ def do_print(*args, name: str = None, quiet: bool = False) -> None:
 
 def do_build(
     dockerfile: Path,
-    allow_cross_platform: bool = False,
+    full_name: str,
     rebuild: bool = False,
-    name: str = None,
     quiet: bool = False,
-) -> str:
-    # Handle tags / arch
+) -> None:
+    options = {
+        "path": str(REPO_DIR),
+        "dockerfile": str(dockerfile).lstrip(str(REPO_DIR)),
+        "tag": f"{full_name}:latest",
+        "nocache": rebuild,
+        "quiet": False,
+    }
+    do_print(f"Building: {options}", name=full_name, quiet=quiet)
+    for out in DOCKER_API.build(**options):
+        do_print(parse_stream(out).rstrip("\n"), name=full_name, quiet=quiet)
+    if REPO_DOCKERIGNORE.is_file():
+        REPO_DOCKERIGNORE.unlink()
+
+
+def do_push(full_name: str, tags: list, quiet: bool = False) -> None:
+    for tag in tags:
+        do_print(f"Pushing: {full_name}:{tag}", name=full_name, quiet=quiet)
+        DOCKER_CLIENT.images.push(full_name, tag=tag)
+
+
+def do_image_workflow(
+    dockerfile: Path,
+    allow_cross_platform: bool = False,
+    push: bool = False,
+    rebuild: bool = False,
+    quiet: bool = False,
+) -> None:
+    # Short name for initial logging
+    name = dockerfile.parent.stem
+    # Parser full name and check platform
     extra_tags = [s.lstrip(".") for s in dockerfile.suffixes]
     for t in extra_tags:
         if t != t.lower():
@@ -47,10 +75,10 @@ def do_build(
             )
     image_arch = "x86_64"
     if "l4t" in extra_tags:
-        do_print(f"Found Linux 4 Tegra tag in {dockerfile}", name=name, quiet=quiet)
+        do_print(f"Found Linux 4 Tegra tag in {dockerfile}", name=name)
         image_arch = "aarch64"
     if "arm64v8" in extra_tags:
-        do_print(f"Found ARM64v8 tag in {dockerfile}", name=name, quiet=quiet)
+        do_print(f"Found ARM64v8 tag in {dockerfile}", name=name)
         image_arch = "aarch64"
     if image_arch != platform.machine():
         if allow_cross_platform:
@@ -59,7 +87,6 @@ def do_build(
                 f"(this={platform.machine()} vs requested={image_arch}):",
                 f"{dockerfile}",
                 name=name,
-                quiet=quiet,
             )
         else:
             do_print(
@@ -67,58 +94,34 @@ def do_build(
                 f"(this={platform.machine()} vs requested={image_arch}):",
                 f"Skipping: {dockerfile}",
                 name=name,
-                quiet=quiet,
             )
             return
     full_name = f"{DOCKER_NAMESPACE}/{dockerfile.parent.stem}"
     if len(extra_tags):
         full_name += "_" + "_".join(extra_tags)
-    # Build the image
-    options = {
-        "path": str(REPO_DIR),
-        "dockerfile": str(dockerfile).lstrip(str(REPO_DIR)),
-        "tag": f"{full_name}:latest",
-        "nocache": rebuild,
-        "quiet": False,
-    }
-    do_print(f"Building: {options}", name=name, quiet=quiet)
-    for out in DOCKER_API.build(**options):
-        do_print(parse_stream(out).rstrip("\n"), name=name, quiet=quiet)
-    if REPO_DOCKERIGNORE.is_file():
-        REPO_DOCKERIGNORE.unlink()
-    return full_name
+    # Build it
+    do_build(
+        dockerfile,
+        full_name,
+        rebuild=rebuild,
+        quiet=quiet,
+    )
+    # Push it
+    if push:
+        do_push(full_name, tags=["latest"], quiet=quiet)
 
 
-def do_push(full_name: str, tags: list, name: str = None, quiet: bool = False) -> None:
-    for tag in tags:
-        do_print(f"Pushing: {full_name}:{tag}", name=name, quiet=quiet)
-        DOCKER_CLIENT.images.push(full_name, tag=tag)
-
-
-def do_image_workflow(
-    name: str,
-    allow_cross_platform: bool = False,
-    push: bool = False,
-    rebuild: bool = False,
-    quiet: bool = False,
-) -> None:
-    directory = Path(IMAGES_DIR / name)
-    # Get dockerfiles
-    dfiles = list(directory.glob("Dockerfile*"))
-    if len(dfiles) == 0:
-        do_print(f"No `Dockerfile*`s found: {directory}", name=name, quiet=quiet)
-        return
-    # Build images
-    for dfile in dfiles:
-        full_name = do_build(
-            dfile,
-            allow_cross_platform=allow_cross_platform,
-            rebuild=rebuild,
-            name=name,
-            quiet=quiet,
-        )
-        if push:
-            do_push(full_name, tags=["latest"], name=name, quiet=quiet)
+def get_dockerfiles(names: list) -> list:
+    all_files = []
+    for name in names:
+        directory = Path(IMAGES_DIR / name)
+        these_files = list(directory.glob("Dockerfile*"))
+        if len(these_files) == 0:
+            do_print(f"No `Dockerfile*`s found, skipping: {directory}")
+            continue
+        all_files.extend(these_files)
+    do_print(f"Found {len(all_files)} Dockerfiles!")
+    return all_files
 
 
 def parse_cmd_line_args():
@@ -164,10 +167,11 @@ def parse_cmd_line_args():
 
 if __name__ == "__main__":
     args = parse_cmd_line_args()
-    if len(args.names) == 1 or not args.multiprocess:
-        for name in args.names:
+    dockerfiles = get_dockerfiles(args.names)
+    if len(dockerfiles) == 1 or not args.multiprocess:
+        for dockerfile in dockerfiles:
             do_image_workflow(
-                name,
+                dockerfile,
                 allow_cross_platform=args.allow_cross_platform,
                 rebuild=args.rebuild,
                 push=args.push,
@@ -176,12 +180,12 @@ if __name__ == "__main__":
     else:
         results = []
         with multiprocessing.Pool(min(MAX_JOBS, len(args.names))) as pool:
-            for name in args.names:
-                print(f"Adding build job: {name}")
+            for dockerfile in dockerfiles:
+                print(f"Adding build job: {dockerfile}")
                 results.append(
                     pool.apply_async(
                         do_image_workflow,
-                        args=(name,),
+                        args=(dockerfile,),
                         kwds=dict(
                             allow_cross_platform=args.allow_cross_platform,
                             rebuild=args.rebuild,
