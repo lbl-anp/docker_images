@@ -2,7 +2,7 @@
 # https://github.com/osrf/docker_images/blob/bba0ef85a9b417f3815d2cba3b36e7754611a428/ros/noetic/ubuntu/focal/ros-core/Dockerfile
 # https://gitlab.com/murs/lemurs/lemurs_stack/-/blob/main/docker/images/base_ros/Dockerfile
 
-FROM arm64v8/ubuntu:focal
+FROM ubuntu:focal
 
 # use bash as default shell
 SHELL ["/bin/bash","-c"]
