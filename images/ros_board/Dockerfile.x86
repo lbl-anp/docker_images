@@ -1,6 +1,11 @@
 FROM lblanp/ros_base_noetic_x86
 
 # Install dependencies
+RUN apt-get update \
+    && apt-get install -yq --no-install-recommends \
+        git \
+    && rm -rf /var/lib/apt/lists/*
+
 RUN pip3 install --no-cache-dir --force \
     tornado \
     simplejpeg \
