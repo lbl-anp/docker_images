@@ -179,7 +179,7 @@ if __name__ == "__main__":
             )
     else:
         results = []
-        with multiprocessing.Pool(min(MAX_JOBS, len(args.names))) as pool:
+        with multiprocessing.Pool(min(MAX_JOBS, len(dockerfiles))) as pool:
             for dockerfile in dockerfiles:
                 print(f"Adding build job: {dockerfile}")
                 results.append(
