@@ -32,7 +32,7 @@ launch_help () {
     echo "--rosdep_args Arguments to pass to rosdep. Defaults to \"\"."
     echo "--catkin_make Build workspace with catkin_make_isolated."
     echo "--catkin_make_args Arguments to pass to catkin_make_isolated"
-    echo "                   Defaults to \"\"."
+    echo "                   Defaults to \"--use-ninja -j32 -l32\"."
     echo "--build_workflow Get dependencies and build:"
     echo "      rosdep"
     echo "      catkin_make"
@@ -50,7 +50,7 @@ run_add_to_entrypoint=false
 run_rosdep=false
 rosdep_args=""
 run_catkin_make=false
-catkin_make_args=""
+catkin_make_args="--use-ninja -j32 -l32"
 workspaces=()
 
 _echo "Reading cmd line args:"
@@ -193,7 +193,7 @@ for ws in "${workspaces[@]}"; do
         set +u
         source /entrypoint.sh
         set -u
-        catkin_make_isolated --use-ninja ${catkin_make_args}
+        catkin_make_isolated ${catkin_make_args}
     fi
 
 done
