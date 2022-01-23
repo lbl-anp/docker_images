@@ -14,3 +14,4 @@ stages:
       - cv_camera
       - potree_converter
       - ros_board
+      - ros_viz
