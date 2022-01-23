@@ -1,0 +1,16 @@
+organization: lblanp
+max_num_workers: 4
+cross_platform: True
+push: True
+stages:
+  - name: ROS base images
+    context: ./
+    paths:
+    - ros_base
+  - name: Other images
+    context: ./
+    paths:
+      - cartographer
+      - cv_camera
+      - potree_converter
+      - ros_board
