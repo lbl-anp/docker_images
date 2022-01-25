@@ -4,6 +4,7 @@ FROM lblanp/ros_base_noetic_arm64v8
 RUN apt-get update \
     && apt-get install -yq --no-install-recommends \
         git \
+        ros-$ROS_DISTRO-geometry2 \
     && rm -rf /var/lib/apt/lists/*
 
 RUN pip3 install --no-cache-dir --force \
@@ -12,14 +13,13 @@ RUN pip3 install --no-cache-dir --force \
     psutil
 
 # Get source code
-WORKDIR $WORKSPACE
-RUN mkdir -p src \
-    && cd src \
-    && git clone https://github.com/lbl-anp/rosboard.git \
+WORKDIR $WORKSPACE/src
+RUN git clone https://github.com/lbl-anp/rosboard.git \
     && cd rosboard \
     && git checkout 86ad41a88d72aa3bf109ec3f50f627fcc4d91f49
 
 # Build ros workspace
+WORKDIR $WORKSPACE
 RUN /wsutil.sh --build_workflow $WORKSPACE
 
 # Webserver
