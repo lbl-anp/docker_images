@@ -50,7 +50,7 @@ run_add_to_entrypoint=false
 run_rosdep=false
 rosdep_args=""
 run_catkin_make=false
-catkin_make_args="--use-ninja -j32 -l32"
+catkin_make_args="--use-ninja -j16 -l16"
 workspaces=()
 
 _echo "Reading cmd line args:"
