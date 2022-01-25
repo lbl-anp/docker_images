@@ -4,7 +4,7 @@ cross_platform: True
 push: True
 stages:
   - name: ROS base images
-    context: ./
+    context: ./ros_base
     paths:
     - ros_base
   - name: Other images

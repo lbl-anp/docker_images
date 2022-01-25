@@ -47,7 +47,7 @@ RUN apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C1CF6E31E6
 
 # Add helper scripts
 WORKDIR /
-COPY images/ros_base/wsutil.sh images/ros_base/entrypoint.sh /
+COPY wsutil.sh entrypoint.sh /
 
 # Setup workspace
 ENV WORKSPACE=/workspace
