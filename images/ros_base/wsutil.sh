@@ -154,7 +154,6 @@ for ws in "${workspaces[@]}"; do
     if [ "$run_init" = true ]; then
         _echo "Running init"
         mkdir -p $ws/src
-        mkdir -p $ws/misc
     fi
 
     if [ "$run_add_to_entrypoint" = true ]; then
