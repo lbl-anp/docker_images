@@ -19,12 +19,9 @@ RUN apt-get update && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-RUN git clone https://github.com/m-schuetz/LAStools.git lastools && \
+RUN git clone https://github.com/LAStools/LAStools.git lastools && \
     cd lastools/LASzip && \
     git checkout master && \
-    mkdir -p build && \
-    cd build && \
-    cmake -DCMAKE_BUILD_TYPE=Release .. && \
     make
 
 RUN git clone https://github.com/potree/PotreeConverter.git potreeconverter && \
