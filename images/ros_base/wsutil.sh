@@ -147,13 +147,6 @@ check_src () {
     fi
 }
 
-rosdep_default_args="\
-    -y \
-    --from-paths src \
-    --ignore-src \
-    --rosdistro $ROS_DISTRO \
-    --as-root=apt:false"
-
 for ws in "${workspaces[@]}"; do
 
     _echo "Processing ws: ${ws}"
