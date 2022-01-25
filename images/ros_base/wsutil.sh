@@ -139,10 +139,16 @@ if [ ${#workspaces[@]} -eq 0 ]; then
     exit 1
 fi
 
-check_src () {
+check_for_ros_pkgs () {
     local ws=$1
-    if [[ ! -d $ws/src ]]; then
-        _echo "ERROR: No src folder present: ${ws}/src. Exitting!"
+    local src=$ws/src
+    local num_cmake=$(find "${src}" -name "CMakeLists.txt" | wc -l)
+    local num_pkg=$(find "${src}" -name "package.xml" | wc -l)
+    if [[ $num_cmake -gt 0 ]] && \
+       [[ $num_pkg -gt 0 ]]; then
+        _echo "Found ${num_pkg} ROS packages in here: ${ws}"
+    else
+        _echo "ERROR: No ROS packages in here: ${ws}. Exitting!"
         exit 1
     fi
 }
@@ -168,7 +174,7 @@ for ws in "${workspaces[@]}"; do
     if [ "$run_rosdep" = true ]; then
         _echo "Running rosdep"
         cd $ws
-        check_src $ws
+        check_for_ros_pkgs $ws
         apt-get update
         rosdep update
         set +u
@@ -181,7 +187,7 @@ for ws in "${workspaces[@]}"; do
     if [ "$run_catkin_make" = true ]; then
         _echo "Running catkin_make"
         cd $ws
-        check_src $ws
+        check_for_ros_pkgs $ws
         set +u
         source /entrypoint.sh
         set -u
