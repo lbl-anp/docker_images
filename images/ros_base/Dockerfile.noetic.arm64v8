@@ -31,7 +31,7 @@ RUN echo 'America/Los_Angeles' > /etc/timezone && \
 		python3-pip \
 		python3-vcstools && \
     update-alternatives --install /usr/bin/pip pip /usr/bin/pip3 1 && \
-	pip3 install --user --no-cache-dir --upgrade pip && \
+	pip3 install --user --no-cache-dir --force pip && \
     rm -rf /var/lib/apt/lists/*
 
 # Install ROS base distribution

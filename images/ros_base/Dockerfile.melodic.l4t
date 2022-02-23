@@ -28,7 +28,7 @@ RUN echo 'America/Los_Angeles' > /etc/timezone \
 		python \
 		python-dev \
 		python-pip \
-    && python -m pip install --no-cache-dir --upgrade \
+    && python -m pip install --no-cache-dir --force \
         pip \
     && python -m pip install --no-cache-dir \
         wheel \
