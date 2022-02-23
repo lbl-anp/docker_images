@@ -51,9 +51,10 @@ COPY wsutil.sh entrypoint.sh /
 
 # Setup workspace
 ENV WORKSPACE=/workspace
+ENV ROS_WORKSPACE=$WORKSPACE/ros
 RUN chmod a+x wsutil.sh entrypoint.sh && \
     /wsutil.sh --add_to_entrypoint --setup_subpath="setup.bash" /opt/ros/${ROS_DISTRO} && \
-    /wsutil.sh --init ${WORKSPACE}
+    /wsutil.sh --init ${ROS_WORKSPACE}
 
 # Final touches
 WORKDIR ${WORKSPACE}
