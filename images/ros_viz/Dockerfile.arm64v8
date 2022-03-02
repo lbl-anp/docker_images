@@ -1,5 +1,12 @@
 FROM lblanp/ros_base_noetic_arm64v8
 
+# To run this with display access on linux use the following configuration on
+# the host:
+#
+# docker run -it --rm \
+#   -e DISPLAY -e QT_X11_NO_MITSHM=1 -v /tmp/.X11-unix:/tmp/.X11-unix:rw \
+#   lblanp/ros_viz_arm64v8
+
 # Install dependencies
 RUN apt-get update \
     && apt-get install -q -y --no-install-recommends \
