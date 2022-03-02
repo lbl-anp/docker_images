@@ -1,0 +1,28 @@
+FROM lblanp/ros_base_noetic_x86
+
+# Install dependencies
+RUN apt-get update \
+    && apt-get install -yq --no-install-recommends \
+        git \
+        cmake \
+    && rm -rf /var/lib/apt/lists/*
+
+# Get SDK
+WORKDIR $WORKSPACE/misc
+RUN git clone https://github.com/Livox-SDK/Livox-SDK.git && \
+    cd Livox-SDK && \
+    git checkout 9306596a2bf15c1343bc023b497465ed0a32909d && \
+    cd build && \
+    cmake .. && \
+    make && \
+    make install
+
+# Get ROS driver
+WORKDIR $ROS_WORKSPACE/src
+RUN git clone https://github.com/Livox-SDK/livox_ros_driver.git \
+    && cd livox_ros_driver \
+    && git checkout 880c46a91aaa602dbecf20e204da4751747b3826
+
+# Build ros workspace
+WORKDIR $ROS_WORKSPACE
+RUN /wsutil.sh --build_workflow $ROS_WORKSPACE

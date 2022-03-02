@@ -1,0 +1,18 @@
+FROM lblanp/ros_base_noetic_x86
+
+# Install dependencies
+RUN apt-get update \
+    && apt-get install -yq --no-install-recommends \
+        git \
+        cmake \
+    && rm -rf /var/lib/apt/lists/*
+
+# Get ROS driver
+WORKDIR $ROS_WORKSPACE/src
+RUN git clone https://github.com/stereolabs/zed-ros-interfaces.git \
+    && cd zed-ros-interfaces \
+    && git checkout v1.1
+
+# Build ros workspace
+WORKDIR $ROS_WORKSPACE
+RUN /wsutil.sh --build_workflow $ROS_WORKSPACE

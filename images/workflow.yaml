@@ -15,3 +15,5 @@ stages:
       - potree_converter
       - ros_board
       - ros_viz
+      - livox
+      - zed
