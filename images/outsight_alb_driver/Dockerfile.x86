@@ -1,0 +1,25 @@
+FROM lblanp/ros_base_noetic_x86
+
+# Install dependencies
+RUN apt-get update && \
+    apt-get install --no-install-recommends -y \
+        curl \
+        git \
+        libcurl4-openssl-dev \
+        ros-noetic-tf2 \
+        ros-noetic-tf2-ros \
+        ros-noetic-tf2-geometry-msgs && \
+    rm -rf /var/lib/apt/lists/*
+
+# Get ROS Driver
+WORKDIR $ROS_WORKSPACE/src
+RUN git clone https://gitlab.com/outsight-public/outsight-drivers/outsight_alb_driver.git \
+    && cd outsight_alb_driver \
+    && git checkout 1.2.1
+
+# Build ros workspace
+WORKDIR $ROS_WORKSPACE
+RUN /wsutil.sh --build_workflow $ROS_WORKSPACE
+
+# Default command to run the configuration server and data acquisition
+CMD roslaunch outsight_alb_driver outsight_alb.launch

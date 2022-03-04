@@ -10,6 +10,7 @@ stages:
   - name: Other images
     context: ./
     paths:
+      - outsight_alb_driver
       - cartographer
       - cv_camera
       - potree_converter
