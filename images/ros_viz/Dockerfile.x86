@@ -14,4 +14,5 @@ RUN apt-get update \
         ros-$ROS_DISTRO-rqt \
         ros-$ROS_DISTRO-rqt-common-plugins \
         ros-$ROS_DISTRO-camera-calibration \
+        ros-$ROS_DISTRO-image-view \
     && rm -rf /var/lib/apt/lists/*
