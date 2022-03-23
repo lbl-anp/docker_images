@@ -32,6 +32,12 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
+      - name: Cache docker image layers
+        uses: actions/cache@v2
+        with:
+          path: |
+            /var/lib/docker/image
+            /var/lib/docker/overlay2
       - name: Run docker build and push workflow
         run: |
           cd images
