@@ -5,6 +5,7 @@ RUN apt-get update \
     && apt-get install -yq --no-install-recommends \
         git \
         cmake \
+        ptpd \
     && rm -rf /var/lib/apt/lists/*
 
 # Get SDK
@@ -26,3 +27,5 @@ RUN git clone https://github.com/Livox-SDK/livox_ros_driver.git \
 # Build ros workspace
 WORKDIR $ROS_WORKSPACE
 RUN /wsutil.sh --build_workflow $ROS_WORKSPACE
+
+CMD ["roslaunch livox_ros_driver livox_lidar.launch"]
