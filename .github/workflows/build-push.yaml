@@ -9,7 +9,7 @@ name: Build docker images in parallel and push to pypi
 on:
   push:
     # tags: ["v*"]
-    branches: [$default-branch]
+    # branches: [$default-branch]
 
 jobs:
   build-push:
