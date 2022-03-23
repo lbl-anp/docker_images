@@ -10,7 +10,6 @@ on:
   push:
     tags: ["v*"]
     branches: [$default-branch]
-  workflow_dispatch:
 
 jobs:
   build-push:
