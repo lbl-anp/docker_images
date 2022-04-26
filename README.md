@@ -10,6 +10,7 @@ cross-platform images (i.e. the ARM images on x86). In order to build run:
 
 ```bash
 cd images
+pip3 install parallel_docker_build
 parallel-docker-build workflow workflow.yaml
 ```
 
