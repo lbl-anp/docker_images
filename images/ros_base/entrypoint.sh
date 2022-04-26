@@ -1,3 +1,5 @@
 #!/bin/bash
 
-exec "$@"
+args=( "$@" )
+set --
+exec "${args[@]}"
